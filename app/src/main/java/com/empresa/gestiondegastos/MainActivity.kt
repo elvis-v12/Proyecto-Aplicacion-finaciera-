@@ -27,6 +27,14 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.empresa.gestiondegastos.ui.screens.LoginScreen
+import com.empresa.gestiondegastos.ui.screens.RegisterScreen
+import com.empresa.gestiondegastos.ui.screens.ForgotPasswordScreen
+import com.empresa.gestiondegastos.ui.screens.DashboardScreen
+import com.empresa.gestiondegastos.ui.screens.AddExpenseScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +43,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             GestionDeGastosTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    GreetingScreen(Modifier.padding(innerPadding))
+                    AppNavigation(Modifier.padding(innerPadding))
                 }
             }
         }
@@ -43,13 +51,109 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun GreetingScreen(modifier: Modifier = Modifier) {
+fun AppNavigation(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "welcome",
+        modifier = modifier
+    ) {
+        composable("welcome") {
+            GreetingScreen(
+                modifier = Modifier,
+                onLoginClick = {
+                    navController.navigate("login")
+                },
+                onStartClick = {
+                    navController.navigate("register")
+                }
+            )
+        }
+        composable("login") {
+            LoginScreen(
+                onLoginClick = { email, password ->
+                    // Aquí irá la lógica de login
+                    navController.navigate("dashboard")
+                },
+                onGoogleSignInClick = {
+                    // Aquí irá la lógica de Google Sign-In
+                    navController.navigate("dashboard")
+                },
+                onForgotPasswordClick = {
+                    navController.navigate("forgot_password")
+                }
+            )
+        }
+        composable("register") {
+            RegisterScreen(
+                onRegisterClick = { name, email, password, confirmPassword ->
+                    // Aquí irá la lógica de registro
+                    navController.navigate("login")
+                }
+            )
+        }
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onSendResetEmail = { email ->
+                    // Aquí irá la lógica para enviar el correo de recuperación
+                },
+                onBackToLogin = {
+                    navController.navigate("login")
+                }
+            )
+        }
+        composable("dashboard") {
+            DashboardScreen(
+                onAddExpense = {
+                    navController.navigate("add_expense")
+                },
+                onViewHistory = {
+                    // Ir a la pantalla de historial
+                },
+                onViewBudget = {
+                    // Ir a la pantalla de presupuesto
+                },
+                onViewAlerts = {
+                    // Ir a la pantalla de alertas
+                },
+                onExportData = {
+                    // Ir a la pantalla de exportación
+                },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("dashboard") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("add_expense") {
+            AddExpenseScreen(
+                onExpenseAdded = {
+                    navController.navigate("dashboard") {
+                        popUpTo("add_expense") { inclusive = true }
+                    }
+                },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun GreetingScreen(
+    modifier: Modifier = Modifier,
+    onLoginClick: () -> Unit = {},
+    onStartClick: () -> Unit = {}
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.Top,
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 🟢 Título principal
         Text(
@@ -114,7 +218,10 @@ fun GreetingScreen(modifier: Modifier = Modifier) {
         )
 
         // ▶️ Botón "Empezar"
-        Button(onClick = { /* Acción para empezar */ }) {
+        Button(
+            onClick = onStartClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Empezar")
         }
 
@@ -125,7 +232,7 @@ fun GreetingScreen(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.primary,
             fontSize = 16.sp,
             modifier = Modifier
-                .clickable { /* Acción para entrar si ya se registró */ }
+                .clickable(onClick = onLoginClick)
                 .padding(8.dp),
             textAlign = TextAlign.Center
         )
