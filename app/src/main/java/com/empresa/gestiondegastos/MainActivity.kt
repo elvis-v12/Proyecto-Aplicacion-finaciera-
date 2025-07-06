@@ -4,41 +4,38 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.empresa.gestiondegastos.ui.theme.GestionDeGastosTheme
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.rememberAsyncImagePainter
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.empresa.gestiondegastos.ui.screens.LoginScreen
-import com.empresa.gestiondegastos.ui.screens.RegisterScreen
-import com.empresa.gestiondegastos.ui.screens.ForgotPasswordScreen
-import com.empresa.gestiondegastos.ui.screens.DashboardScreen
-import com.empresa.gestiondegastos.ui.screens.AddExpenseScreen
+import coil.compose.rememberAsyncImagePainter
+import com.empresa.gestiondegastos.ui.screens.*
+import com.empresa.gestiondegastos.ui.theme.GestionDeGastosTheme
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
+import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         enableEdgeToEdge()
         setContent {
             GestionDeGastosTheme {
@@ -61,69 +58,60 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     ) {
         composable("welcome") {
             GreetingScreen(
-                modifier = Modifier,
-                onLoginClick = {
-                    navController.navigate("login")
-                },
-                onStartClick = {
-                    navController.navigate("register")
-                }
+                onLoginClick = { navController.navigate("login") },
+                onStartClick = { navController.navigate("register") }
             )
         }
         composable("login") {
             LoginScreen(
-                onLoginClick = { email, password ->
-                    // Aquí irá la lógica de login
-                    navController.navigate("dashboard")
+                onRegisterClick = { navController.navigate("register") },
+                onLoginSuccess = {
+                    navController.navigate("dashboard") {
+                        popUpTo("login") { inclusive = true }
+                    }
                 },
-                onGoogleSignInClick = {
-                    // Aquí irá la lógica de Google Sign-In
-                    navController.navigate("dashboard")
-                },
-                onForgotPasswordClick = {
-                    navController.navigate("forgot_password")
-                }
+                onGoogleSignInClick = { navController.navigate("dashboard") },
+                onForgotPasswordClick = { navController.navigate("forgot_password") },
+                onSocialClick = {},
+                onContinueWithoutAccount = {}
             )
         }
         composable("register") {
             RegisterScreen(
-                onRegisterClick = { name, email, password, confirmPassword ->
-                    // Aquí irá la lógica de registro
-                    navController.navigate("login")
+                onLoginNavigationClick = {
+                    navController.navigate("login") {
+                        popUpTo("register") { inclusive = true }
+                    }
                 }
             )
         }
         composable("forgot_password") {
             ForgotPasswordScreen(
-                onSendResetEmail = { email ->
-                    // Aquí irá la lógica para enviar el correo de recuperación
-                },
-                onBackToLogin = {
-                    navController.navigate("login")
-                }
+                onSendResetEmail = { email -> },
+                onBackToLogin = { navController.navigate("login") }
             )
         }
         composable("dashboard") {
             DashboardScreen(
-                onAddExpense = {
-                    navController.navigate("add_expense")
-                },
-                onViewHistory = {
-                    // Ir a la pantalla de historial
-                },
-                onViewBudget = {
-                    // Ir a la pantalla de presupuesto
-                },
-                onViewAlerts = {
-                    // Ir a la pantalla de alertas
-                },
-                onExportData = {
-                    // Ir a la pantalla de exportación
-                },
+                onAddExpense = { navController.navigate("add_expense") },
+                onViewHistory = { /* implementa si deseas */ },
+                onViewBudget = { /* implementa si deseas */ },
+                onViewAlerts = { /* implementa si deseas */ },
+                onExportData = { /* implementa si deseas */ },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("dashboard") { inclusive = true }
                     }
+                },
+                onNavigateToCalendar = {
+                    // por ahora puede redirigir al mismo dashboard
+                    navController.navigate("dashboard")
+                },
+                onNavigateToCharts = {
+                    navController.navigate("charts")
+                },
+                onNavigateToWallet = {
+                    navController.navigate("wallet")
                 }
             )
         }
@@ -134,9 +122,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                         popUpTo("add_expense") { inclusive = true }
                     }
                 },
-                onBack = {
-                    navController.popBackStack()
-                }
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("charts") {
+            ChartsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("wallet") {
+            WalletScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }
@@ -149,13 +145,9 @@ fun GreetingScreen(
     onStartClick: () -> Unit = {}
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // 🟢 Título principal
         Text(
             text = "Una forma simple de llevar el control de tus gastos.",
             fontSize = 25.sp,
@@ -165,80 +157,95 @@ fun GreetingScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp)
-
+                .padding(horizontal = 24.dp, vertical = 32.dp)
         )
 
-        // 🔄 Aquí irá el carrusel más adelante
         val images = listOf(
-            "https://images.unsplash.com/photo-1532581291347-9c39cf10a73c?w=1080",
-            "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1080",
-            "https://images.unsplash.com/photo-1602524207237-14b6d8d1e4af?w=1080"
+            R.drawable.primera1,
+            R.drawable.segunda2,
+            R.drawable.tercera3
         )
+
 
         val pagerState = rememberPagerState()
-        val coroutineScope = rememberCoroutineScope()
+        val scope = rememberCoroutineScope()
 
-        HorizontalPager(
-            count = images.size,
-            state = pagerState,
+        Box(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .height(200.dp)
-        ) { page ->
-            Box(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(16.dp))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(images[page]),
-                    contentDescription = "Imagen del carrusel",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                HorizontalPager(
+                    count = images.size,
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) { page ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(images[page]),
+                            contentDescription = "Imagen del carrusel",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+
+                HorizontalPagerIndicator(
+                    pagerState = pagerState,
+                    modifier = Modifier
+                        .padding(16.dp),
+                    activeColor = MaterialTheme.colorScheme.primary,
+                    inactiveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        HorizontalPagerIndicator(
-            pagerState = pagerState,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            activeColor = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 👋 Texto de bienvenida
-        Text(
-            text = "Hola Bienvenido!",
-            fontSize = 24.sp,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // ▶️ Botón "Empezar"
-        Button(
-            onClick = onStartClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Empezar")
-        }
-
-        // 🔤 Texto "Ya me registré, entrar"
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Ya me registré, entrar",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 16.sp,
+        Column(
             modifier = Modifier
-                .clickable(onClick = onLoginClick)
-                .padding(8.dp),
-            textAlign = TextAlign.Center
-        )
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onStartClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(
+                    text = "Empezar",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = "¿Ya tienes una cuenta?",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                modifier = Modifier.clickable(onClick = onLoginClick)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,22 +24,18 @@ fun AddExpenseScreen(
     var description by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Alimentación") }
     var date by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
 
     val categories = listOf(
-        "Alimentación",
-        "Transporte",
-        "Entretenimiento",
-        "Servicios",
-        "Salud",
-        "Educación",
-        "Otros"
+        "Alimentación", "Transporte", "Entretenimiento",
+        "Servicios", "Salud", "Educación", "Otros"
     )
+
+    val db = Firebase.firestore
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Nuevo Gasto") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -55,52 +53,41 @@ fun AddExpenseScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Campo de monto
             OutlinedTextField(
                 value = amount,
-                onValueChange = { 
+                onValueChange = {
                     if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) {
                         amount = it
                     }
                 },
                 label = { Text("Monto") },
-                leadingIcon = {
-                    Icon(Icons.Default.AttachMoney, contentDescription = "Monto")
-                },
+                leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = "Monto") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = KeyboardType.Number
                 )
             )
 
-            // Campo de descripción
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Descripción") },
-                leadingIcon = {
-                    Icon(Icons.Default.Description, contentDescription = "Descripción")
-                },
+                leadingIcon = { Icon(Icons.Default.Description, contentDescription = "Descripción") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
 
-            // Selector de categoría
             ExposedDropdownMenuBox(
                 expanded = isExpanded,
                 onExpandedChange = { isExpanded = !isExpanded }
             ) {
                 OutlinedTextField(
                     value = selectedCategory,
-                    onValueChange = { },
+                    onValueChange = {},
                     readOnly = true,
                     label = { Text("Categoría") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Category, contentDescription = "Categoría")
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
-                    },
+                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = "Categoría") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor()
@@ -113,7 +100,7 @@ fun AddExpenseScreen(
                     categories.forEach { category ->
                         DropdownMenuItem(
                             text = { Text(category) },
-                            onClick = { 
+                            onClick = {
                                 selectedCategory = category
                                 isExpanded = false
                             }
@@ -122,36 +109,39 @@ fun AddExpenseScreen(
                 }
             }
 
-            // Campo de fecha
             OutlinedTextField(
                 value = date,
-                onValueChange = { },
-                label = { Text("Fecha") },
-                leadingIcon = {
-                    Icon(Icons.Default.DateRange, contentDescription = "Fecha")
-                },
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = "Seleccionar fecha")
-                    }
-                }
+                onValueChange = { date = it },
+                label = { Text("Fecha (ej: 2024-07-06)") },
+                leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Fecha") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // Botón de guardar
             Button(
                 onClick = {
-                    // Aquí irá la lógica para guardar el gasto
-                    onExpenseAdded()
+                    val gasto = hashMapOf(
+                        "monto" to amount.toDouble(),
+                        "descripcion" to description,
+                        "categoria" to selectedCategory,
+                        "fecha" to date
+                    )
+
+                    db.collection("gastos")
+                        .add(gasto)
+                        .addOnSuccessListener {
+                            onExpenseAdded()
+                        }
+                        .addOnFailureListener {
+                            // Aquí puedes manejar errores si deseas
+                        }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
-                enabled = amount.isNotEmpty() && description.isNotEmpty()
+                enabled = amount.isNotEmpty() && description.isNotEmpty() && date.isNotEmpty()
             ) {
                 Text("Guardar Gasto")
             }
         }
     }
-} 
+}

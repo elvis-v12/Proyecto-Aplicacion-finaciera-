@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "304264301838",
+    "project_id": "appgastos-bccad",
+    "storage_bucket": "appgastos-bccad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:304264301838:android:0ebfb772a3100468351b5f",
+        "android_client_info": {
+          "package_name": "com.empresa.gestiondegastos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZ1bZ1OnWikc8_IMJoajqQ_xS-TWtr1ZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
